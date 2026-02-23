@@ -1,0 +1,13 @@
+[package]
+name    = "quaternator"
+version = "0.1.0"
+authors = ["MajorX234 <majorx234@googlemail.com>"]
+edition = "2021"
+
+[[bin]]
+name = "example1"
+path = "src/example1.rs"
+
+[dependencies]
+nalgebra = "0.34.1"
+nalgebra-glm = "0.20.0"
