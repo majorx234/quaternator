@@ -4,7 +4,6 @@ use std::f32::consts::PI;
 fn main() {
     // 1. Create a 3D vector (x, y, z)
     let position = glm::vec3(1.0, 0.0, 0.0);
-
     // 2. Create a translation matrix (move by 2 units along x)
     let translation = glm::translation(&glm::vec3(2.0, 0.0, 0.0));
 

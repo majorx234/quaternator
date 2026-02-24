@@ -8,6 +8,34 @@ edition = "2021"
 name = "example1"
 path = "src/example1.rs"
 
+[[bin]]
+name = "example2"
+path = "src/example2.rs"
+
+[[bin]]
+name = "example3"
+path = "src/example3.rs"
+
+[[bin]]
+name = "example4"
+path = "src/example4.rs"
+
 [dependencies]
+anyhow = "1.0.102"
+bytemuck = "1.24.0"
+eframe = "0.33.3"
+env_logger = "0.11.9"
 nalgebra = "0.34.1"
 nalgebra-glm = "0.20.0"
+wgpu = "27.0.1"
+egui = { version = "0.33.3", default-features = false, features = ["bytemuck"] }
+egui-winit = { version = "0.33.3",  default-features = false }
+egui_glow = { version = "0.33.3", features = ["winit"]  }
+pollster = "0.4.0"
+glow = { version = "0.16.0" }
+glutin = "0.32.3"
+glutin-winit = "0.5.0"
+winit = "0.30.12"
+log = "0.4.29"
+#memoffset.workspace = true
+#profiling.workspace = true
