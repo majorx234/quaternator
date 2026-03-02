@@ -20,6 +20,18 @@ path = "src/example3.rs"
 name = "example4"
 path = "src/example4.rs"
 
+[[bin]]
+name = "example5"
+path = "src/example5.rs"
+
+[[bin]]
+name = "example6"
+path = "src/example6.rs"
+
+[[bin]]
+name = "example7"
+path = "src/example7.rs"
+
 [dependencies]
 anyhow = "1.0.102"
 bytemuck = "1.24.0"
@@ -39,3 +51,7 @@ winit = "0.30.12"
 log = "0.4.29"
 #memoffset.workspace = true
 #profiling.workspace = true
+egui_glium = "0.33.2"
+glium = "0.36.0"
+image = { version = "0.25.9", default-features = false, features = ["png"] }
+cgmath = "0.18.0"
