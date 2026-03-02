@@ -32,6 +32,10 @@ path = "src/example6.rs"
 name = "example7"
 path = "src/example7.rs"
 
+[[bin]]
+name = "example8"
+path = "src/example8.rs"
+
 [dependencies]
 anyhow = "1.0.102"
 bytemuck = "1.24.0"
