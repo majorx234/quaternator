@@ -108,7 +108,7 @@ color = vec4(v_color, 1.0);
     };
 
     let view = Matrix4::look_at_rh(
-        &Point3::new(0.0, 0.0, 2.0),  // camera position
+        &Point3::new(0.0, 0.0, -10.0),  // camera position
         &Point3::new(0.0, 0.0, 0.0),  // look-at point
         &Vector3::new(0.0, 1.0, 0.0),  // up vector
     );
