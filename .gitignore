@@ -22,3 +22,6 @@ material/
 auto-save-list
 tramp
 .\#*
+
+##### Kate
+*.kate-swp
