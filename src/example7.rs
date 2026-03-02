@@ -1,18 +1,8 @@
-use glium::{Display, Surface, Program, VertexBuffer, IndexBuffer, implement_vertex, uniform};
-use glium::index::PrimitiveType;
-use glium::glutin;
-use glium::{
-    backend::glutin::SimpleWindowBuilder};
-use nalgebra::Rotation3;
+use glium::{ backend::glutin::SimpleWindowBuilder, index::PrimitiveType, IndexBuffer, implement_vertex, Program, Surface, VertexBuffer, uniform,};
 // use cgmath::{Matrix3, Matrix4, Vector3, Rad, Deg, InnerSpace, SquareMatrix, Transform, Vector4};
-use nalgebra::{base::{Matrix3, Matrix4}, geometry::Perspective3, Isometry3, Point3, Vector3};
-use nalgebra_glm::Vec3;
+use nalgebra::{base::Matrix4,Point3, Vector3};
 use std::time::Instant;
-use winit::event_loop::EventLoop;
-use winit::event::Event;
-use winit::event::WindowEvent;
-use winit::window::{Window};
-use winit::event_loop::ControlFlow;
+use winit::{event_loop::{ControlFlow, EventLoop},event::{Event, WindowEvent }, window::Window};
 
 // Vertex definition (position + color)
 #[derive(Copy, Clone)]
