@@ -1,11 +1,66 @@
-use winit::{application::ApplicationHandler, event_loop::{ActiveEventLoop, ControlFlow, EventLoop}, event::{Event, ElementState, KeyEvent, WindowEvent }, window::{Window, WindowAttributes, WindowId}};
+use std::time::Instant;
 
-#[derive(Default, Debug)]
+use glium::{Display, IndexBuffer, index::PrimitiveType, Program, Surface, VertexBuffer, backend::glutin::SimpleWindowBuilder, implement_vertex, uniform};
+use glutin::surface::WindowSurface;
+use nalgebra::{Matrix4, Point3, Vector3};
+use winit::{
+    application::ApplicationHandler,
+    event::{ElementState, Event, KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    window::{Window, WindowAttributes, WindowId},
+};
+
+// Vertex definition (position + color)
+#[derive(Copy, Clone, Debug)]
+struct Vertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+}
+implement_vertex!(Vertex, position, color);
+
+struct CubePose {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+#[derive(Debug)]
 struct Glium3DApp {
+    display: Display<WindowSurface>,
     request_redraw: bool,
-    wait_cancelled: bool,
     close_requested: bool,
     window: Option<Window>,
+    start_time: Instant,
+    perspective: Matrix4<f32>,
+    view: Matrix4<f32>,
+    vertex_buffer: VertexBuffer<Vertex>,
+    index_buffer: IndexBuffer<u16>,
+    program: Program,
+}
+
+impl Glium3DApp {
+    pub fn new(
+        display: Display<WindowSurface>,
+        start_time: Instant,
+        perspective: Matrix4<f32>,
+        view: Matrix4<f32>,
+        vertex_buffer: VertexBuffer<Vertex>,
+        index_buffer: IndexBuffer<u16>,
+        program: Program,
+    ) -> Self {
+        Glium3DApp {
+            display,
+            request_redraw: false,
+            close_requested: false,
+            window: None,
+            start_time,
+            perspective,
+            view,
+            vertex_buffer,
+            index_buffer,
+            program,
+        }
+    }
 }
 
 impl ApplicationHandler for Glium3DApp {
@@ -15,17 +70,51 @@ impl ApplicationHandler for Glium3DApp {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        // Do Glium rendering:
+        let mut target = self.display.draw();
+        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+
+        // Rotate cube over time
+        let elapsed = self.start_time.elapsed().as_secs_f32();
+        let model = Matrix4::from_axis_angle(&Vector3::x_axis(), elapsed)
+            * Matrix4::from_axis_angle(&Vector3::y_axis(), elapsed * 0.5);
+
+        // Uniforms for the shader
+        let uniforms = uniform! {
+            perspective: Into::<[[f32; 4]; 4]>::into(self.perspective),
+            view: Into::<[[f32; 4]; 4]>::into(self.view),
+            model: Into::<[[f32; 4]; 4]>::into(model),
+        };
+
+        // Draw the cube
+        target
+            .draw(
+                &self.vertex_buffer,
+                &self.index_buffer,
+                &self.program,
+                &uniforms,
+                &Default::default(),
+            )
+            .unwrap();
+        target.finish().unwrap();
+
+        // Do event handling
         println!("{event:?}");
         match event {
             WindowEvent::CloseRequested => {
                 self.close_requested = true;
-            },
+            }
             WindowEvent::KeyboardInput {
-                event: KeyEvent { logical_key: key, state: ElementState::Pressed, .. },
+                event:
+                    KeyEvent {
+                        logical_key: key,
+                        state: ElementState::Pressed,
+                        ..
+                    },
                 ..
             } => match key.as_ref() {
                 _ => {
-                    println!("pressed key: {:?}\n",key);
+                    println!("pressed key: {:?}\n", key);
                 }
             },
             WindowEvent::RedrawRequested => {
@@ -42,20 +131,135 @@ impl ApplicationHandler for Glium3DApp {
     }
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         println!("resumed");
-        self.window = match event_loop.create_window(Window::default_attributes()){
+        self.window = match event_loop.create_window(Window::default_attributes()) {
             Ok(window) => Some(window),
             Err(err) => {
                 eprintln!("error creating window: {err}");
                 event_loop.exit();
                 return;
-            },
+            }
         };
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let center = CubePose {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let h: f32 = 1.0;
+
     let event_loop = EventLoop::new().unwrap();
+    let (window, display) = SimpleWindowBuilder::new()
+        .set_window_builder(Window::default_attributes().with_resizable(true))
+        .with_inner_size(800, 600)
+        .with_title("egui_glium 3D Cube example")
+        .build(&event_loop);
+
+    // 2. Define cube geometry (8 vertices, 12 triangles)
+    let vertex_data = [
+        // Front face (red -> green -> blue -> yellow)
+        Vertex {
+            position: [center.x - h, center.y - h, center.z + h],
+            color: [0.0, 0.0, 0.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y - h, center.z + h],
+            color: [0.0, 1.0, 0.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y + h, center.z + h],
+            color: [0.0, 0.0, 1.0],
+        },
+        Vertex {
+            position: [center.x - h, center.y + h, center.z + h],
+            color: [1.0, 1.0, 0.0],
+        },
+        // Back face
+        Vertex {
+            position: [center.x - h, center.y - h, center.z - h],
+            color: [1.0, 0.0, 1.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y - h, center.z - h],
+            color: [0.0, 1.0, 1.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y + h, center.z - h],
+            color: [0.5, 0.5, 0.5],
+        },
+        Vertex {
+            position: [center.x - h, center.y + h, center.z - h],
+            color: [1.0, 1.0, 1.0],
+        },
+    ];
+
+    let index_data: &[u16] = &[
+        0, 1, 2, 2, 3, 0, // front
+        1, 5, 6, 6, 2, 1, // right
+        5, 4, 7, 7, 6, 5, // back
+        4, 0, 3, 3, 7, 4, // left
+        3, 2, 6, 6, 7, 3, // top
+        4, 5, 1, 1, 0, 4, // bottom
+    ];
+
+    let vertex_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
+    let index_buffer =
+        IndexBuffer::new(&display, PrimitiveType::TrianglesList, index_data).unwrap();
+
+    // 3. Shaders (simple per-vertex coloring)
+    let vertex_shader = r#"
+#version 140
+in vec3 position;
+in vec3 color;
+out vec3 v_color;
+uniform mat4 perspective;
+uniform mat4 view;
+uniform mat4 model;
+void main() {
+    v_color = color;
+    gl_Position = perspective * view * model * vec4(position, 1.0);
+}
+"#;
+
+    let fragment_shader = r#"
+#version 140
+in vec3 v_color;
+out vec4 color;
+void main() {
+    color = vec4(v_color, 1.0);
+}
+"#;
+
+    let program = Program::from_source(&display, vertex_shader, fragment_shader, None).unwrap();
+
+    // 4. Camera matrices
+    let perspective = {
+        let (width, height) = display.get_framebuffer_dimensions();
+        let aspect_ratio = width as f32 / height as f32; // corrected
+        let fov: f32 = std::f32::consts::PI / 3.0;
+        let znear = 0.1;
+        let zfar = 1024.0;
+        Matrix4::new_perspective(aspect_ratio, fov, znear, zfar)
+    };
+
+    let view = Matrix4::look_at_rh(
+        &Point3::new(0.0, 0.0, -10.0), // camera position
+        &Point3::new(0.0, 0.0, 0.0),   // look-at point
+        &Vector3::new(0.0, 1.0, 0.0),  // up vector
+    );
+
     event_loop.set_control_flow(ControlFlow::Poll);
-    event_loop.run_app(&mut Glium3DApp::default())?;
+    let mut glium_app = Glium3DApp::new(
+        display,
+        Instant::now(),
+        perspective,
+        view,
+        vertex_buffer,
+        index_buffer,
+        program,
+    );
+    event_loop.run_app(&mut glium_app)?;
     Ok(())
 }
