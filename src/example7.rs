@@ -1,8 +1,15 @@
-use glium::{ backend::glutin::SimpleWindowBuilder, index::PrimitiveType, IndexBuffer, implement_vertex, Program, Surface, VertexBuffer, uniform,};
+use glium::{
+    backend::glutin::SimpleWindowBuilder, implement_vertex, index::PrimitiveType, uniform,
+    IndexBuffer, Program, Surface, VertexBuffer,
+};
 // use cgmath::{Matrix3, Matrix4, Vector3, Rad, Deg, InnerSpace, SquareMatrix, Transform, Vector4};
-use nalgebra::{base::Matrix4,Point3, Vector3};
+use nalgebra::{base::Matrix4, Point3, Vector3};
 use std::time::Instant;
-use winit::{event_loop::{ControlFlow, EventLoop},event::{Event, WindowEvent }, window::Window};
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::Window,
+};
 
 // Vertex definition (position + color)
 #[derive(Copy, Clone)]
@@ -12,7 +19,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, color);
 
-struct CubePose{
+struct CubePose {
     pub x: f32,
     pub y: f32,
     pub z: f32,
@@ -21,12 +28,12 @@ struct CubePose{
 // implement_vertex!(Vertex, position, color);
 
 fn main() {
-    let center = CubePose{
+    let center = CubePose {
         x: 0.0,
         y: 0.0,
         z: 0.0,
     };
-    let h:f32 = 1.0;
+    let h: f32 = 1.0;
     // 1. Create window and OpenGL context
     let event_loop = EventLoop::new().unwrap();
     let (window, display) = SimpleWindowBuilder::new()
@@ -38,28 +45,53 @@ fn main() {
     // 2. Define cube geometry (8 vertices, 12 triangles)
     let vertex_data = [
         // Front face (red -> green -> blue -> yellow)
-        Vertex{ position: [center.x - h, center.y - h, center.z + h], color: [0.0, 0.0, 0.0] },
-        Vertex{ position: [center.x + h, center.y - h, center.z + h], color: [0.0, 1.0, 0.0] },
-        Vertex{ position: [center.x + h, center.y + h, center.z + h], color: [0.0, 0.0, 1.0] },
-        Vertex{ position: [center.x - h, center.y + h, center.z + h], color: [1.0, 1.0, 0.0] },
+        Vertex {
+            position: [center.x - h, center.y - h, center.z + h],
+            color: [0.0, 0.0, 0.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y - h, center.z + h],
+            color: [0.0, 1.0, 0.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y + h, center.z + h],
+            color: [0.0, 0.0, 1.0],
+        },
+        Vertex {
+            position: [center.x - h, center.y + h, center.z + h],
+            color: [1.0, 1.0, 0.0],
+        },
         // Back face
-        Vertex{ position: [center.x - h, center.y - h, center.z - h], color: [1.0, 0.0, 1.0] },
-        Vertex{ position: [center.x + h, center.y - h, center.z - h], color: [0.0, 1.0, 1.0] },
-        Vertex{ position: [center.x + h, center.y + h, center.z - h], color: [0.5, 0.5, 0.5] },
-        Vertex{ position: [center.x - h, center.y + h, center.z - h], color: [1.0, 1.0, 1.0] },
+        Vertex {
+            position: [center.x - h, center.y - h, center.z - h],
+            color: [1.0, 0.0, 1.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y - h, center.z - h],
+            color: [0.0, 1.0, 1.0],
+        },
+        Vertex {
+            position: [center.x + h, center.y + h, center.z - h],
+            color: [0.5, 0.5, 0.5],
+        },
+        Vertex {
+            position: [center.x - h, center.y + h, center.z - h],
+            color: [1.0, 1.0, 1.0],
+        },
     ];
 
     let index_data: &[u16] = &[
-        0, 1, 2,  2, 3, 0,  // front
-        1, 5, 6,  6, 2, 1,  // right
-        5, 4, 7,  7, 6, 5,  // back
-        4, 0, 3,  3, 7, 4,  // left
-        3, 2, 6,  6, 7, 3,  // top
-        4, 5, 1,  1, 0, 4,  // bottom
+        0, 1, 2, 2, 3, 0, // front
+        1, 5, 6, 6, 2, 1, // right
+        5, 4, 7, 7, 6, 5, // back
+        4, 0, 3, 3, 7, 4, // left
+        3, 2, 6, 6, 7, 3, // top
+        4, 5, 1, 1, 0, 4, // bottom
     ];
 
     let vertex_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
-    let index_buffer = IndexBuffer::new(&display, PrimitiveType::TrianglesList, index_data).unwrap();
+    let index_buffer =
+        IndexBuffer::new(&display, PrimitiveType::TrianglesList, index_data).unwrap();
 
     // 3. Shaders (simple per-vertex coloring)
     let vertex_shader = r#"
@@ -98,8 +130,8 @@ color = vec4(v_color, 1.0);
     };
 
     let view = Matrix4::look_at_rh(
-        &Point3::new(0.0, 0.0, -10.0),  // camera position
-        &Point3::new(0.0, 0.0, 0.0),  // look-at point
+        &Point3::new(0.0, 0.0, -10.0), // camera position
+        &Point3::new(0.0, 0.0, 0.0),   // look-at point
         &Vector3::new(0.0, 1.0, 0.0),  // up vector
     );
 
@@ -113,7 +145,7 @@ color = vec4(v_color, 1.0);
         // Rotate cube over time
         let elapsed = start_time.elapsed().as_secs_f32();
         let model = Matrix4::from_axis_angle(&Vector3::x_axis(), elapsed)
-        * Matrix4::from_axis_angle(&Vector3::y_axis(), elapsed * 0.5);
+            * Matrix4::from_axis_angle(&Vector3::y_axis(), elapsed * 0.5);
 
         // Uniforms for the shader
         let uniforms = uniform! {
@@ -123,7 +155,15 @@ color = vec4(v_color, 1.0);
         };
 
         // Draw the cube
-        target.draw(&vertex_buffer, &index_buffer, &program, &uniforms, &Default::default()).unwrap();
+        target
+            .draw(
+                &vertex_buffer,
+                &index_buffer,
+                &program,
+                &uniforms,
+                &Default::default(),
+            )
+            .unwrap();
         target.finish().unwrap();
 
         // Handle window close
@@ -131,7 +171,7 @@ color = vec4(v_color, 1.0);
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => {
                     control_flow.exit();
-                },
+                }
                 _ => (),
             },
             _ => (),
