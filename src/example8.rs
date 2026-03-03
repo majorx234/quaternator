@@ -5,9 +5,9 @@ use glutin::surface::WindowSurface;
 use nalgebra::{Matrix4, Point3, Vector3};
 use winit::{
     application::ApplicationHandler,
-    event::{ElementState, Event, KeyEvent, WindowEvent},
+    event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::{Window, WindowAttributes, WindowId},
+    window::{Window, WindowId},
 };
 
 // Vertex definition (position + color)
@@ -27,7 +27,6 @@ struct CubePose {
 #[derive(Debug)]
 struct Glium3DApp {
     display: Display<WindowSurface>,
-    request_redraw: bool,
     close_requested: bool,
     window: Option<Window>,
     start_time: Instant,
@@ -50,7 +49,6 @@ impl Glium3DApp {
     ) -> Self {
         Glium3DApp {
             display,
-            request_redraw: false,
             close_requested: false,
             window: None,
             start_time,
@@ -70,10 +68,6 @@ impl ApplicationHandler for Glium3DApp {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        // Do Glium rendering:
-        let mut target = self.display.draw();
-        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
-
         // Rotate cube over time
         let elapsed = self.start_time.elapsed().as_secs_f32();
         let model = Matrix4::from_axis_angle(&Vector3::x_axis(), elapsed)
@@ -85,6 +79,10 @@ impl ApplicationHandler for Glium3DApp {
             view: Into::<[[f32; 4]; 4]>::into(self.view),
             model: Into::<[[f32; 4]; 4]>::into(model),
         };
+
+        // Do Glium rendering:
+        let mut target = self.display.draw();
+        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
         // Draw the cube
         target
@@ -174,7 +172,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         Vertex {
             position: [center.x - h, center.y + h, center.z + h],
-            color: [1.0, 1.0, 0.0],
+            color: [1.0, 0.0, 0.0],
         },
         // Back face
         Vertex {
@@ -187,7 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         Vertex {
             position: [center.x + h, center.y + h, center.z - h],
-            color: [0.5, 0.5, 0.5],
+            color: [1.0, 1.0, 0.0],
         },
         Vertex {
             position: [center.x - h, center.y + h, center.z - h],
@@ -196,12 +194,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
 
     let index_data: &[u16] = &[
-        0, 1, 2, 2, 3, 0, // front
-        1, 5, 6, 6, 2, 1, // right
-        5, 4, 7, 7, 6, 5, // back
-        4, 0, 3, 3, 7, 4, // left
-        3, 2, 6, 6, 7, 3, // top
-        4, 5, 1, 1, 0, 4, // bottom
+        0, 1, 2,
+        2, 3, 0, // front
+        5, 7, 4,
+        7, 5, 6, // back
+        1, 6, 5,
+        6, 1, 2, // right
+        4, 0, 3,
+        3, 7, 4, // left
+        3, 2, 6,
+        7, 3, 6, // top
+        4, 5, 1,
+        1, 0, 4, // bottom
     ];
 
     let vertex_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
@@ -210,7 +214,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 3. Shaders (simple per-vertex coloring)
     let vertex_shader = r#"
-#version 140
+#version 450
 in vec3 position;
 in vec3 color;
 out vec3 v_color;
@@ -224,7 +228,7 @@ void main() {
 "#;
 
     let fragment_shader = r#"
-#version 140
+#version 450
 in vec3 v_color;
 out vec4 color;
 void main() {
