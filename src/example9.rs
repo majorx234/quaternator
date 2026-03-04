@@ -114,8 +114,8 @@ impl ApplicationHandler for Glium3DApp {
             event_loop.exit();
         }
         // Rotate cube
-        let model = Matrix4::from_axis_angle(&Vector3::x_axis(), self.rotate_x)
-            * Matrix4::from_axis_angle(&Vector3::y_axis(), self.rotate_y);
+        let model = Matrix4::from_axis_angle(&Vector3::x_axis(), self.rotate_y)
+            * Matrix4::from_axis_angle(&Vector3::y_axis(), self.rotate_x);
 
         // Uniforms for the shader
         let uniforms = uniform! {
@@ -163,7 +163,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let h: f32 = 1.0;
 
     let event_loop = EventLoop::new().unwrap();
-    let (window, display) = SimpleWindowBuilder::new()
+    let (_window, display) = SimpleWindowBuilder::new()
         .set_window_builder(Window::default_attributes().with_resizable(true))
         .with_inner_size(800, 600)
         .with_title("egui_glium 3D Cube example")
