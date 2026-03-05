@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use glium::{Display, IndexBuffer, index::PrimitiveType, Program, Surface, VertexBuffer, backend::glutin::SimpleWindowBuilder, implement_vertex, uniform};
+use glium::{
+    backend::glutin::SimpleWindowBuilder, implement_vertex, index::PrimitiveType, uniform, Display,
+    IndexBuffer, Program, Surface, VertexBuffer,
+};
 use glutin::surface::WindowSurface;
 use nalgebra::{Matrix4, Point3, Vector3};
 use winit::{
@@ -77,7 +80,7 @@ impl ApplicationHandler for Glium3DApp {
         event: WindowEvent,
     ) {
         // Do event handling
-//        println!("{event:?}");
+        //        println!("{event:?}");
         match event {
             WindowEvent::CloseRequested => {
                 self.close_requested = true;
@@ -96,15 +99,45 @@ impl ApplicationHandler for Glium3DApp {
                 }
             },
             WindowEvent::RedrawRequested => {
+                // Rotate cube
+                let model = Matrix4::from_axis_angle(&Vector3::x_axis(), self.rotate_y)
+                    * Matrix4::from_axis_angle(&Vector3::y_axis(), self.rotate_x);
+
+                // Uniforms for the shader
+                let uniforms = uniform! {
+                    perspective: Into::<[[f32; 4]; 4]>::into(self.perspective),
+                    view: Into::<[[f32; 4]; 4]>::into(self.view),
+                    model: Into::<[[f32; 4]; 4]>::into(model),
+                };
+
+                // Do Glium rendering:
+                let mut target = self.display.draw();
+                target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+
+                // Draw the cube
+                target
+                    .draw(
+                        &self.vertex_buffer,
+                        &self.index_buffer,
+                        &self.program,
+                        &uniforms,
+                        &Default::default(),
+                    )
+                    .unwrap();
+                target.finish().unwrap();
+
                 self.window.as_ref().unwrap().request_redraw();
-            },
-            WindowEvent::CursorMoved{device_id, position} => {
+            }
+            WindowEvent::CursorMoved {
+                device_id,
+                position,
+            } => {
                 // CursorMoved { device_id: DeviceId(Wayland(DeviceId)), position: PhysicalPosition { x: 0.0, y: 1.0 } }
-                self.rotate_x += (self.last_x - position.x as f32)/100.0;
-                self.rotate_y += (self.last_y - position.y as f32)/100.0;
+                self.rotate_x += (self.last_x - position.x as f32) / 100.0;
+                self.rotate_y += (self.last_y - position.y as f32) / 100.0;
                 self.last_x = position.x as f32;
                 self.last_y = position.y as f32;
-            },
+            }
             _ => {
                 println!("some event\n");
             }
@@ -113,33 +146,6 @@ impl ApplicationHandler for Glium3DApp {
             println!("The close button was pressed; stopping");
             event_loop.exit();
         }
-        // Rotate cube
-        let model = Matrix4::from_axis_angle(&Vector3::x_axis(), self.rotate_y)
-            * Matrix4::from_axis_angle(&Vector3::y_axis(), self.rotate_x);
-
-        // Uniforms for the shader
-        let uniforms = uniform! {
-            perspective: Into::<[[f32; 4]; 4]>::into(self.perspective),
-            view: Into::<[[f32; 4]; 4]>::into(self.view),
-            model: Into::<[[f32; 4]; 4]>::into(model),
-        };
-
-        // Do Glium rendering:
-        let mut target = self.display.draw();
-        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
-
-        // Draw the cube
-        target
-            .draw(
-                &self.vertex_buffer,
-                &self.index_buffer,
-                &self.program,
-                &uniforms,
-                &Default::default(),
-            )
-            .unwrap();
-        target.finish().unwrap();
-
     }
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         println!("resumed");
