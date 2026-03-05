@@ -81,6 +81,7 @@ impl ApplicationHandler for Glium3DApp {
     ) {
         // Do event handling
         //        println!("{event:?}");
+        let elapsed = self.start_time.elapsed().as_secs_f32();
         match event {
             WindowEvent::CloseRequested => {
                 self.close_requested = true;
@@ -108,6 +109,7 @@ impl ApplicationHandler for Glium3DApp {
                     perspective: Into::<[[f32; 4]; 4]>::into(self.perspective),
                     view: Into::<[[f32; 4]; 4]>::into(self.view),
                     model: Into::<[[f32; 4]; 4]>::into(model),
+                    uTime: elapsed,
                 };
 
                 // Do Glium rendering:
@@ -237,13 +239,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #version 450
 in vec3 position;
 in vec3 color;
+uniform float uTime;
 out vec3 v_color;
 uniform mat4 perspective;
 uniform mat4 view;
 uniform mat4 model;
+
+mat2 rotate2d(float angle) {
+    float s = sin(angle);
+    float c = cos(angle);
+    return mat2(c, -s, s, c);
+}
+
 void main() {
+    vec3 pos_rot = position;
+    pos_rot.yz = pos_rot.yz * rotate2d(uTime * 0.5);
+    pos_rot.xz = pos_rot.xz * rotate2d(uTime);
+
     v_color = color;
-    gl_Position = perspective * view * model * vec4(position, 1.0);
+    gl_Position = perspective * view * model * vec4(pos_rot, 1.0);
 }
 "#;
 
