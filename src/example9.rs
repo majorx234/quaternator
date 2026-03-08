@@ -117,13 +117,21 @@ impl ApplicationHandler for Glium3DApp {
                 target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
                 // Draw the cube
+                let params = glium::DrawParameters {
+                    depth: glium::Depth {
+                        test: glium::draw_parameters::DepthTest::IfLess,
+                        write: true,
+                        .. Default::default()
+                    },
+                    .. Default::default()
+                };
                 target
                     .draw(
                         &self.vertex_buffer,
                         &self.index_buffer,
                         &self.program,
                         &uniforms,
-                        &Default::default(),
+                        &params,
                     )
                     .unwrap();
                 target.finish().unwrap();
