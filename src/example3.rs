@@ -212,7 +212,7 @@ impl winit::application::ApplicationHandler<UserEvent> for GlowApp {
             self.egui_glow
                 .as_mut()
                 .unwrap()
-                .run(self.gl_window.as_mut().unwrap().window(), |ui| {
+                .run(self.gl_window.as_mut().unwrap().window(), |_ui| {
                     //egui::SidePanel::left("my_side_panel").show(egui_glow.);
                     // egui::Panel::left("my_side_panel").show_inside(ui, |ui| {
 

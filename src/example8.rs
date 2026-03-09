@@ -149,7 +149,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let h: f32 = 1.0;
 
     let event_loop = EventLoop::new().unwrap();
-    let (window, display) = SimpleWindowBuilder::new()
+    let (_window, display) = SimpleWindowBuilder::new()
         .set_window_builder(Window::default_attributes().with_resizable(true))
         .with_inner_size(800, 600)
         .with_title("egui_glium 3D Cube example")

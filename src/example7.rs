@@ -7,7 +7,7 @@ use nalgebra::{base::Matrix4, Point3, Vector3};
 use std::time::Instant;
 use winit::{
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::EventLoop,
     window::Window,
 };
 
@@ -36,7 +36,7 @@ fn main() {
     let h: f32 = 1.0;
     // 1. Create window and OpenGL context
     let event_loop = EventLoop::new().unwrap();
-    let (window, display) = SimpleWindowBuilder::new()
+    let (_window, display) = SimpleWindowBuilder::new()
         .set_window_builder(Window::default_attributes().with_resizable(true))
         .with_inner_size(800, 600)
         .with_title("egui_glium 3D Cube example")
@@ -138,7 +138,7 @@ color = vec4(v_color, 1.0);
     let start_time = Instant::now();
 
     // 5. Main event loop
-    event_loop.run(move |event, control_flow| {
+    let _ = event_loop.run(move |event, control_flow| {
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 

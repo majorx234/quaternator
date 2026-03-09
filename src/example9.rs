@@ -139,7 +139,7 @@ impl ApplicationHandler for Glium3DApp {
                 self.window.as_ref().unwrap().request_redraw();
             }
             WindowEvent::CursorMoved {
-                device_id,
+                device_id: _,
                 position,
             } => {
                 // CursorMoved { device_id: DeviceId(Wayland(DeviceId)), position: PhysicalPosition { x: 0.0, y: 1.0 } }
