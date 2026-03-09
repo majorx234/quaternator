@@ -13,7 +13,7 @@ use winit::{
     window::{Window, WindowId},
 };
 pub mod teapot;
-use teapot::{INDICES, Vertex, VERTICES};
+use teapot::{INDICES, NORMALS, Normal, VERTICES, Vertex};
 
 // Vertex definition (position + color)
 #[derive(Copy, Clone, Debug)]
@@ -37,7 +37,8 @@ struct Glium3DApp {
     start_time: Instant,
     perspective: Matrix4<f32>,
     view: Matrix4<f32>,
-    vertex_buffer: VertexBuffer<Vertex>,
+    positions: VertexBuffer<Vertex>,
+    normals: VertexBuffer<Normal>,
     index_buffer: IndexBuffer<u16>,
     program: Program,
     last_x: f32,
@@ -52,7 +53,8 @@ impl Glium3DApp {
         start_time: Instant,
         perspective: Matrix4<f32>,
         view: Matrix4<f32>,
-        vertex_buffer: VertexBuffer<Vertex>,
+        positions: VertexBuffer<Vertex>,
+        normals: VertexBuffer<Normal>,
         index_buffer: IndexBuffer<u16>,
         program: Program,
     ) -> Self {
@@ -63,7 +65,8 @@ impl Glium3DApp {
             start_time,
             perspective,
             view,
-            vertex_buffer,
+            positions,
+            normals,
             index_buffer,
             program,
             last_x: 0.0,
@@ -106,12 +109,16 @@ impl ApplicationHandler for Glium3DApp {
                 let model = Matrix4::from_axis_angle(&Vector3::x_axis(), self.rotate_y)
                     * Matrix4::from_axis_angle(&Vector3::y_axis(), self.rotate_x);
 
+                // TODO: make light moveing by parameter
+                let light = [-1.0, 0.4, 0.9f32];
+
                 // Uniforms for the shader
                 let uniforms = uniform! {
                     perspective: Into::<[[f32; 4]; 4]>::into(self.perspective),
                     view: Into::<[[f32; 4]; 4]>::into(self.view),
                     model: Into::<[[f32; 4]; 4]>::into(model),
                     uTime: elapsed,
+                    u_light: light,
                 };
 
                 // Do Glium rendering:
@@ -129,7 +136,7 @@ impl ApplicationHandler for Glium3DApp {
                 };
                 target
                     .draw(
-                        &self.vertex_buffer,
+                        (&self.positions, &self.normals),
                         &self.index_buffer,
                         &self.program,
                         &uniforms,
@@ -141,7 +148,7 @@ impl ApplicationHandler for Glium3DApp {
                 self.window.as_ref().unwrap().request_redraw();
             }
             WindowEvent::CursorMoved {
-                device_id,
+                device_id: _,
                 position,
             } => {
                 // CursorMoved { device_id: DeviceId(Wayland(DeviceId)), position: PhysicalPosition { x: 0.0, y: 1.0 } }
@@ -192,7 +199,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let index_data: &[u16] = &INDICES;
 
-    let vertex_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
+    let positions = VertexBuffer::new(&display, &vertex_data).unwrap();
+    let normals = VertexBuffer::new(&display, &NORMALS).unwrap();
     let index_buffer =
         IndexBuffer::new(&display, PrimitiveType::TrianglesList, index_data).unwrap();
 
@@ -200,8 +208,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vertex_shader = r#"
 #version 450
 in vec3 position;
+in vec3 normal;
 uniform float uTime;
 out vec3 v_color;
+out vec3 v_normal;
 uniform mat4 perspective;
 uniform mat4 view;
 uniform mat4 model;
@@ -219,15 +229,22 @@ void main() {
 
     v_color = vec3(1.0, 0.0, 0.0);
     gl_Position = perspective * view * model * vec4(pos_rot, 1.0);
+    v_normal = transpose(inverse(mat3(perspective * view * model))) * normal;
 }
 "#;
 
     let fragment_shader = r#"
 #version 450
 in vec3 v_color;
+in vec3 v_normal;
 out vec4 color;
+uniform vec3 u_light;
+
 void main() {
-    color = vec4(v_color, 1.0);
+    float brightness = dot(normalize(v_normal), normalize(u_light));
+    vec3 dark_color = vec3(0.6, 0.0, 0.0);
+    vec3 regular_color = vec3(1.0, 0.0, 0.0);
+    color = vec4(mix(dark_color, regular_color, brightness), 1.0);
 }
 "#;
 
@@ -255,7 +272,8 @@ void main() {
         Instant::now(),
         perspective,
         view,
-        vertex_buffer,
+        positions,
+        normals,
         index_buffer,
         program,
     );

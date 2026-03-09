@@ -542,7 +542,7 @@ pub const VERTICES: [Vertex; 531] = [
     Vertex { position: (34.9202, 28.3457, -15.6121) }
 ];
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Normal {
     normal: (f32, f32, f32)
 }
