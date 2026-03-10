@@ -14,7 +14,35 @@ use winit::{
 };
 use std::fs::File;
 use std::io::BufReader;
-use obj::{load_obj, Obj, Vertex};
+use obj::{load_obj, Obj};
+
+#[derive(Copy, Clone, Debug)]
+pub struct Vertex {
+    /// Position vector of a vertex.
+    pub position: [f32; 3],
+    /// Normal vertor of a vertex.
+    pub normal: [f32; 3],
+}
+implement_vertex!(Vertex, position, normal);
+
+impl From<&obj::Vertex> for Vertex {
+    fn from(vertex: &obj::Vertex) -> Self{
+        Vertex{
+            position: vertex.position,
+            normal: vertex.normal,
+        }
+    }
+}
+
+impl From<obj::Vertex> for Vertex {
+    fn from(vertex: obj::Vertex) -> Self{
+        Vertex{
+            position: vertex.position,
+            normal: vertex.normal,
+        }
+    }
+}
+
 
 #[derive(Debug)]
 struct Glium3DApp {
@@ -175,17 +203,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build(&event_loop);
 
 
-    // let vertex_normals_buffer = VertexBuffer::new(&display, &vertex_normals_data).unwrap();
-    let vertex_normals_buffer = model.vertex_buffer(&display)?;
-    //let index_buffer =
-    //    IndexBuffer::new(&display, PrimitiveType::TrianglesList, index_data).unwrap();
-    let index_buffer = model.index_buffer(&display)?;
+    let vertex_data: Vec<Vertex> = model.vertices.iter().map(|v|v.into()).collect();
+    let vertex_normals_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
+    //let vertex_normals_buffer = model.vertex_buffer(&display)?;
+    let index_buffer =
+        IndexBuffer::new(&display, PrimitiveType::TrianglesList, &model.indices).unwrap();
+    //let index_buffer = model.index_buffer(&display)?;
 
     // 3. Shaders (simple per-vertex coloring)
     let vertex_shader = r#"
 #version 450
-in vec3 vertex_position;
-in vec3 vertex_normal;
+in vec3 position;
+in vec3 normal;
 uniform float uTime;
 out vec3 v_color;
 out vec3 v_normal;
@@ -200,13 +229,13 @@ mat2 rotate2d(float angle) {
 }
 
 void main() {
-    vec3 pos_rot = vertex_position;
+    vec3 pos_rot = position;
     pos_rot.yz = pos_rot.yz * rotate2d(uTime * 0.5);
     pos_rot.xz = pos_rot.xz * rotate2d(uTime);
 
     v_color = vec3(1.0, 0.0, 0.0);
     gl_Position = perspective * view * model * vec4(pos_rot, 1.0);
-    v_normal = transpose(inverse(mat3(perspective * view * model))) * vertex_normal;
+    v_normal = transpose(inverse(mat3(perspective * view * model))) * normal;
 }
 "#;
 
