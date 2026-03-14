@@ -192,16 +192,19 @@ impl ApplicationHandler for Glium3DApp {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let input = BufReader::new(File::open("assets/teapot.obj")?);
-    let model: Obj = load_obj(input)?;
-
+    // Winit program
     let event_loop = EventLoop::new().unwrap();
     let (_window, display) = SimpleWindowBuilder::new()
         .set_window_builder(Window::default_attributes().with_resizable(true))
         .with_inner_size(800, 600)
-        .with_title("egui_glium 3D Cube example")
+        .with_title("egui_glium 3D Teapot load obj example")
         .build(&event_loop);
 
+    event_loop.set_control_flow(ControlFlow::Poll);
+
+    // 3D glium stuff
+    let input = BufReader::new(File::open("assets/teapot.obj")?);
+    let model: Obj = load_obj(input)?;
 
     let vertex_data: Vec<Vertex> = model.vertices.iter().map(|v|v.into()).collect();
     let vertex_normals_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
@@ -272,7 +275,7 @@ void main() {
         &Vector3::new(0.0, 1.0, 0.0),  // up vector
     );
 
-    event_loop.set_control_flow(ControlFlow::Poll);
+    // create App
     let mut glium_app = Glium3DApp::new(
         display,
         Instant::now(),
