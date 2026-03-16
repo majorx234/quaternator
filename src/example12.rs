@@ -1,7 +1,7 @@
-use egui::{load::SizedTexture, TextureId, Vec2, ViewportId};
+use egui::ViewportId;
 use glium::{
     backend::glutin::SimpleWindowBuilder, glutin::surface::WindowSurface, implement_vertex,
-    index::PrimitiveType, uniform, Display, IndexBuffer, Program, Surface, VertexBuffer,
+    index::PrimitiveType, uniform, IndexBuffer, Program, Surface, VertexBuffer,
 };
 use nalgebra::{Matrix4, Point3, Vector3};
 use obj::{load_obj, Obj};
@@ -24,6 +24,8 @@ pub struct Vertex {
 }
 implement_vertex!(Vertex, position, normal);
 
+// workaround till obj-library will suport new glium version
+// converts obj Vertex( file loading) to glium Vertex (rendering)
 impl From<&obj::Vertex> for Vertex {
     fn from(vertex: &obj::Vertex) -> Self {
         Vertex {
@@ -59,10 +61,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let vertex_data: Vec<Vertex> = model.vertices.iter().map(|v| v.into()).collect();
     let vertex_normals_buffer = VertexBuffer::new(&display, &vertex_data).unwrap();
-    //let vertex_normals_buffer = model.vertex_buffer(&display)?;
     let index_buffer =
         IndexBuffer::new(&display, PrimitiveType::TrianglesList, &model.indices).unwrap();
-    //let index_buffer = model.index_buffer(&display)?;
 
     // 3. Shaders (simple per-vertex coloring)
     let vertex_shader = r#"
@@ -126,7 +126,7 @@ void main() {
         &Vector3::new(0.0, 1.0, 0.0),   // up vector
     );
 
-    let mut egui_glium =
+    let egui_glium =
         egui_glium::EguiGlium::new(ViewportId::ROOT, &display, &window, &event_loop);
 
     let mut app = TeapotApp::new(
@@ -144,16 +144,6 @@ void main() {
     Ok(event_loop.run_app(&mut app)?)
 }
 
-fn create_display(
-    event_loop: &EventLoop<()>,
-) -> (winit::window::Window, glium::Display<WindowSurface>) {
-    SimpleWindowBuilder::new()
-        .set_window_builder(Window::default_attributes().with_resizable(true))
-        .with_inner_size(800, 600)
-        .with_title("egui_glium example")
-        .build(event_loop)
-}
-
 struct TeapotApp {
     egui_glium: egui_glium::EguiGlium,
     window: winit::window::Window,
@@ -165,8 +155,6 @@ struct TeapotApp {
     vertex_normal_buffer: VertexBuffer<Vertex>,
     index_buffer: IndexBuffer<u16>,
     program: Program,
-    last_x: f32,
-    last_y: f32,
     rotate_x: f32,
     rotate_y: f32,
 }
@@ -194,8 +182,6 @@ impl TeapotApp {
             vertex_normal_buffer,
             index_buffer,
             program,
-            last_x: 0.0,
-            last_y: 0.0,
             rotate_x: 0.0,
             rotate_y: 0.0,
         }
@@ -205,14 +191,6 @@ impl TeapotApp {
 impl ApplicationHandler for TeapotApp {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
         println!("resumed");
-        //self.window = match event_loop.create_window(Window::default_attributes()) {
-        //    Ok(window) => window,
-        //    Err(err) => {
-        //        eprintln!("error creating window: {err}");
-        //        event_loop.exit();
-        //        return;
-        //    }
-        //};
     }
 
     fn window_event(
@@ -222,8 +200,9 @@ impl ApplicationHandler for TeapotApp {
         event: WindowEvent,
     ) {
         let elapsed = self.start_time.elapsed().as_secs_f32();
+
+        // rendering primitive as closure
         let mut redraw = || {
-            let mut quit = false;
             self.egui_glium.run(&self.window, |egui_ctx| {
                 egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
                     if ui.add(egui::Button::new("close")).clicked() {
@@ -231,7 +210,7 @@ impl ApplicationHandler for TeapotApp {
                         self.close_requested = true;
                     };
                 });
-                egui::Window::new("TeapotDisplay").show(egui_ctx, |ui| {
+                egui::Window::new("TeapotDisplay").show(egui_ctx, |_ui| {
                     // show sth
                 });
             });
@@ -252,6 +231,10 @@ impl ApplicationHandler for TeapotApp {
                     uTime: elapsed,
                     u_light: light,
                 };
+
+                if self.close_requested {
+                    event_loop.exit();
+                }
 
                 // Do Glium rendering:
                 let mut target = self.display.draw();
@@ -277,14 +260,14 @@ impl ApplicationHandler for TeapotApp {
                     .unwrap();
 
                 // draw things behind egui here
-
                 self.egui_glium.paint(&self.display, &mut target);
 
                 // draw things on top of egui here
-
                 target.finish().unwrap();
             }
         };
+
+        // event handler
         match &event {
             WindowEvent::CloseRequested | WindowEvent::Destroyed => {
                 println!("close event");

@@ -64,3 +64,8 @@
 ## example11
 - similar like example10 (`winit` + `glium`)
 - load teapot model by file
+
+## example12
+- similar like example11 (`winit` + `glium`)
+- uses `egui` for control elements
+- unfortunately throw `segmentation fault (core dumped)` on close
